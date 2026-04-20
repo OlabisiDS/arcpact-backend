@@ -20,9 +20,8 @@ const logger = {
     console.error(formatMessage('ERROR', message));
   },
 
-  // Only prints in development mode
   debug: (message: string): void => {
-    if (env.nodeEnv === 'development') {
+    if (env.NODE_ENV === 'development') {
       console.log(formatMessage('INFO', `[DEBUG] ${message}`));
     }
   },
