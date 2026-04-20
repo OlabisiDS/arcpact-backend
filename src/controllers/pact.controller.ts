@@ -4,7 +4,7 @@ import {
   createPact, acceptPact, lockFunds,
   requestRelease, approveRelease,
   requestRefund, approveRefund,
-  raiseDispute, releaseFunds, refundFunds,
+  raiseDispute, releaseFunds, refundFunds, cancelPact,
 } from '../services/pact.service';
 import {
   getPact, getAllPacts,
@@ -64,6 +64,17 @@ export const lock = async (req: Request, res: Response, next: NextFunction): Pro
     const callerAddress = requireCaller(body);
     if (!body.pactId) throw new AppError('Missing field: pactId', 400);
     const result = await lockFunds(String(body.pactId), callerAddress);
+    if (!result.success) { failResult(res, result.message); return; }
+    res.status(200).json({ success: true, data: result.pact });
+  } catch (error) { next(error); }
+};
+
+export const cancel = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const callerAddress = requireCaller(body);
+    if (!body.pactId) throw new AppError('Missing field: pactId', 400);
+    const result = cancelPact(String(body.pactId), callerAddress);
     if (!result.success) { failResult(res, result.message); return; }
     res.status(200).json({ success: true, data: result.pact });
   } catch (error) { next(error); }
