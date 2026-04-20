@@ -1,6 +1,4 @@
-import { ENV } from '../config/env';
 import logger from '../utils/logger';
-import { transferUSDC } from './circle.service';
 import {
   Pact, PactStatus,
   createPact as storePact, getPact as fetchPact,
@@ -23,8 +21,6 @@ const VALID_TRANSITIONS: Record<PactStatus, PactStatus[]> = {
 const canTransition = (from: PactStatus, to: PactStatus): boolean =>
   VALID_TRANSITIONS[from].includes(to);
 
-// ─── Identity enforcement ─────────────────────────────────────────────────────
-
 const isCaller = (stored: string, caller: string): boolean =>
   stored.toLowerCase() === caller.toLowerCase();
 
@@ -35,7 +31,6 @@ export const createPact = (
   receiverAddress: string,
   amount:          string
 ): PactResult => {
-  // Caller IS the sender — enforced by identity
   const pact = storePact(callerAddress, receiverAddress, amount);
   logger.info(`[PactService] Created pact ${pact.id} — ${amount} USDC | sender: ${callerAddress}`);
   return { success: true, pact };
@@ -57,9 +52,6 @@ export const acceptPact = (pactId: string, callerAddress: string): PactResult =>
 };
 
 // ─── lockFunds ────────────────────────────────────────────────────────────────
-// The sender transfers USDC directly from their MetaMask wallet to the escrow
-// address on-chain (handled by the frontend). This endpoint only validates
-// the pact state and records the lock — it does NOT call Circle.
 
 export const lockFunds = async (pactId: string, callerAddress: string): Promise<PactResult> => {
   const pact = fetchPact(pactId);
@@ -71,9 +63,7 @@ export const lockFunds = async (pactId: string, callerAddress: string): Promise<
       return { success: false, message: 'Receiver must accept before you can fund' };
     return { success: false, message: `Cannot lock funds — pact is ${pact.status}` };
   }
-
-  logger.info(`[PactService] Recording lock of ${pact.amount} USDC for pact ${pactId} — on-chain transfer handled by sender wallet`);
-
+  logger.info(`[PactService] Recording lock of ${pact.amount} USDC for pact ${pactId}`);
   const updated = updatePactStatus(pactId, 'FUNDS_LOCKED')!;
   pushNotification(pactId, 'FUNDS_LOCKED', `${pact.amount} USDC locked in escrow`, 'both');
   return { success: true, pact: updated };
@@ -94,6 +84,7 @@ export const requestRelease = (pactId: string, callerAddress: string): PactResul
 };
 
 // ─── approveRelease ───────────────────────────────────────────────────────────
+// MetaMask handles the on-chain transfer. Backend only updates state.
 
 export const approveRelease = async (pactId: string, callerAddress: string): Promise<PactResult> => {
   const pact = fetchPact(pactId);
@@ -104,9 +95,6 @@ export const approveRelease = async (pactId: string, callerAddress: string): Pro
     return { success: false, message: 'Receiver has not requested payment yet' };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: 'Pact must have locked funds' };
-
-  const result = await transferUSDC(ENV.ESCROW_WALLET_ID, pact.receiverAddress, pact.amount);
-  if (!result.success) return { success: false, message: `Release failed: ${result.error}` };
 
   const updated = updatePactFields(pactId, { senderApproval: true, status: 'COMPLETED' })!;
   pushNotification(pactId, 'PAYMENT_APPROVED', `${pact.amount} USDC released to receiver`, 'both');
@@ -128,6 +116,7 @@ export const requestRefund = (pactId: string, callerAddress: string): PactResult
 };
 
 // ─── approveRefund ────────────────────────────────────────────────────────────
+// MetaMask handles the on-chain transfer. Backend only updates state.
 
 export const approveRefund = async (pactId: string, callerAddress: string): Promise<PactResult> => {
   const pact = fetchPact(pactId);
@@ -138,9 +127,6 @@ export const approveRefund = async (pactId: string, callerAddress: string): Prom
     return { success: false, message: 'Sender has not requested a refund yet' };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: 'Pact must have locked funds' };
-
-  const result = await transferUSDC(ENV.ESCROW_WALLET_ID, pact.senderAddress, pact.amount);
-  if (!result.success) return { success: false, message: `Refund failed: ${result.error}` };
 
   const updated = updatePactFields(pactId, { receiverApproval: true, status: 'REFUNDED' })!;
   pushNotification(pactId, 'REFUND_APPROVED', `${pact.amount} USDC refunded to sender`, 'both');
@@ -157,7 +143,6 @@ export const raiseDispute = (pactId: string, callerAddress: string, note: string
   const isReceiver = isCaller(pact.receiverAddress, callerAddress);
   if (!isSender && !isReceiver)
     return { success: false, message: 'Forbidden: address not party to this pact' };
-
   if (pact.status !== 'FUNDS_LOCKED')
     return { success: false, message: 'Can only dispute a pact with locked funds' };
 
@@ -167,15 +152,13 @@ export const raiseDispute = (pactId: string, callerAddress: string, note: string
   return { success: true, pact: updated };
 };
 
-// ─── Admin bypass ─────────────────────────────────────────────────────────────
+// ─── Admin bypass (no Circle — admin handles manually off-chain) ──────────────
 
 export const releaseFunds = async (pactId: string): Promise<PactResult> => {
   const pact = fetchPact(pactId);
   if (!pact) return { success: false, message: `Pact not found` };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: `Cannot release — ${pact.status}` };
-  const result = await transferUSDC(ENV.ESCROW_WALLET_ID, pact.receiverAddress, pact.amount);
-  if (!result.success) return { success: false, message: result.error };
   return { success: true, pact: updatePactStatus(pactId, 'COMPLETED')! };
 };
 
@@ -184,7 +167,5 @@ export const refundFunds = async (pactId: string): Promise<PactResult> => {
   if (!pact) return { success: false, message: `Pact not found` };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: `Cannot refund — ${pact.status}` };
-  const result = await transferUSDC(ENV.ESCROW_WALLET_ID, pact.senderAddress, pact.amount);
-  if (!result.success) return { success: false, message: result.error };
   return { success: true, pact: updatePactStatus(pactId, 'REFUNDED')! };
 };
