@@ -50,7 +50,7 @@ export async function transferUSDC(
       throw new Error('Invalid response from Circle API');
     }
 
-    const transaction = response.data.data.transaction;
+    const transaction = response.data.data;
 
     logger.info(`[CircleService] Transfer success — ID: ${transaction.id} | State: ${transaction.state}`);
 
