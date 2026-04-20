@@ -9,8 +9,6 @@ import {
   TransferResult,
 } from './circle.types';
 
-// ─── Axios Client ─────────────────────────────────────────────────────────────
-
 const circleClient = axios.create({
   baseURL: ENV.CIRCLE_BASE_URL,
   headers: {
@@ -19,15 +17,6 @@ const circleClient = axios.create({
   },
 });
 
-// ─── transferUSDC ─────────────────────────────────────────────────────────────
-
-/**
- * Sends USDC from a Circle developer wallet to a blockchain address.
- *
- * @param fromWalletId  Source Circle wallet ID
- * @param toAddress     Destination on-chain address (0x...)
- * @param amount        USDC amount as string — e.g. "1"
- */
 export async function transferUSDC(
   fromWalletId: string,
   toAddress:    string,
@@ -40,7 +29,6 @@ export async function transferUSDC(
   logger.info(`[CircleService]   Amount      : ${amount} USDC`);
 
   try {
-    // Fresh ciphertext required per request — stale = "API parameter invalid"
     const entitySecretCiphertext = await generateEntitySecretCiphertext();
 
     const requestBody: CircleTransferRequestBody = {
@@ -58,13 +46,11 @@ export async function transferUSDC(
       requestBody
     );
 
-    // Null-guard: ensure response has expected shape (discovered in real testing)
     if (!response.data || !response.data.data) {
       throw new Error('Invalid response from Circle API');
     }
 
-    // Circle returns response.data.data directly (not .data.data.transaction)
-    const transaction = response.data.data;
+    const transaction = response.data.data.transaction;
 
     logger.info(`[CircleService] Transfer success — ID: ${transaction.id} | State: ${transaction.state}`);
 
