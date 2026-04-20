@@ -3,7 +3,7 @@ import {
   create, accept, lock,
   reqRelease, appRelease,
   reqRefund,  appRefund,
-  dispute,
+  dispute, cancel,
   release, refund,
   getAll, getById, getRole,
   getNotifications, readNotifications,
@@ -15,6 +15,7 @@ const router = Router();
 router.post('/create',          create);
 router.post('/accept',          accept);
 router.post('/lock',            lock);
+router.post('/cancel',          cancel);
 router.post('/request-release', reqRelease);
 router.post('/approve-release', appRelease);
 router.post('/request-refund',  reqRefund);
@@ -31,7 +32,7 @@ router.post('/notifications/read', readNotifications);
 
 // ── Read — named routes BEFORE /:id ──────────────────────────────────────────
 router.get('/all',   getAll);
-router.get('/role',  getRole);   // GET /pact/role?wallet=0x...&pactId=...
+router.get('/role',  getRole);
 router.get('/:id',   getById);
 
 export default router;
