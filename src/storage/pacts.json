@@ -1,0 +1,50 @@
+[
+  {
+    "id": "6e44eccf-00ae-4a04-900a-90bba510c5e3",
+    "senderAddress": "0x774b73348728fea232ca8f06152b20ae8c8859ea",
+    "receiverAddress": "0xc412ff716620e45df5035406cacb30a739784b8a",
+    "amount": "5",
+    "status": "CREATED",
+    "createdAt": "2026-04-18T18:02:07.874Z",
+    "updatedAt": "2026-04-18T18:02:07.874Z",
+    "receiverAccepted": false,
+    "receiverReleaseRequest": false,
+    "senderApproval": false,
+    "senderRefundRequest": false,
+    "receiverApproval": false,
+    "disputedBy": null,
+    "disputeNote": null
+  },
+  {
+    "id": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "senderAddress": "0x774b73348728fea232ca8f06152b20ae8c8859ea",
+    "receiverAddress": "0x08F9E683211bf7285F6A640E6804926bBE1e135d",
+    "amount": "2",
+    "status": "COMPLETED",
+    "createdAt": "2026-04-18T18:04:41.183Z",
+    "updatedAt": "2026-04-18T18:06:47.916Z",
+    "receiverAccepted": true,
+    "receiverReleaseRequest": true,
+    "senderApproval": true,
+    "senderRefundRequest": false,
+    "receiverApproval": false,
+    "disputedBy": null,
+    "disputeNote": null
+  },
+  {
+    "id": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "senderAddress": "0x774b73348728fea232ca8f06152b20ae8c8859ea",
+    "receiverAddress": "0x08F9E683211bf7285F6A640E6804926bBE1e135d",
+    "amount": "5",
+    "status": "COMPLETED",
+    "createdAt": "2026-04-18T22:26:09.273Z",
+    "updatedAt": "2026-04-18T22:28:01.414Z",
+    "receiverAccepted": true,
+    "receiverReleaseRequest": true,
+    "senderApproval": true,
+    "senderRefundRequest": false,
+    "receiverApproval": false,
+    "disputedBy": null,
+    "disputeNote": null
+  }
+]

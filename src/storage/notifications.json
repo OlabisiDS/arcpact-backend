@@ -1,0 +1,101 @@
+[
+  {
+    "id": "95661466-4868-4d55-907e-38f8d8f44b1e",
+    "pactId": "6e44eccf-00ae-4a04-900a-90bba510c5e3",
+    "event": "PACT_CREATED",
+    "message": "New pact created — share with your counterparty",
+    "forRole": "both",
+    "createdAt": "2026-04-18T18:02:07.877Z",
+    "read": true
+  },
+  {
+    "id": "ffd166a0-ef08-4868-8739-d8ce0071a8e2",
+    "pactId": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "event": "PACT_CREATED",
+    "message": "New pact created — share with your counterparty",
+    "forRole": "both",
+    "createdAt": "2026-04-18T18:04:41.184Z",
+    "read": true
+  },
+  {
+    "id": "81951479-599d-46c3-ae00-b31f6b8804ff",
+    "pactId": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "event": "PACT_ACCEPTED",
+    "message": "Receiver accepted — you can now fund the escrow",
+    "forRole": "sender",
+    "createdAt": "2026-04-18T18:05:49.487Z",
+    "read": true
+  },
+  {
+    "id": "26553a27-c454-447f-a1a5-1dfa97b5d1c0",
+    "pactId": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "event": "FUNDS_LOCKED",
+    "message": "2 USDC locked in escrow",
+    "forRole": "both",
+    "createdAt": "2026-04-18T18:06:04.021Z",
+    "read": true
+  },
+  {
+    "id": "d2e7dd2b-7f90-4072-b481-e59cde2643de",
+    "pactId": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "event": "PAYMENT_REQUESTED",
+    "message": "Receiver requested payment — your approval needed",
+    "forRole": "sender",
+    "createdAt": "2026-04-18T18:06:38.070Z",
+    "read": true
+  },
+  {
+    "id": "f534c669-db6b-44a6-9665-655e078fbeee",
+    "pactId": "04f2ce64-5c9c-4230-b9e0-cbb7e1ee0892",
+    "event": "PAYMENT_APPROVED",
+    "message": "2 USDC released to receiver",
+    "forRole": "both",
+    "createdAt": "2026-04-18T18:06:47.917Z",
+    "read": true
+  },
+  {
+    "id": "e673a5e7-8329-4d85-b8bb-73e7cb8688b8",
+    "pactId": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "event": "PACT_CREATED",
+    "message": "New pact created — share with your counterparty",
+    "forRole": "both",
+    "createdAt": "2026-04-18T22:26:09.276Z",
+    "read": true
+  },
+  {
+    "id": "6246beea-8a07-4679-a803-91b6fe10f28a",
+    "pactId": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "event": "PACT_ACCEPTED",
+    "message": "Receiver accepted — you can now fund the escrow",
+    "forRole": "sender",
+    "createdAt": "2026-04-18T22:26:56.521Z",
+    "read": true
+  },
+  {
+    "id": "6dd40cc1-9fcb-4c49-b587-c4889bc7c327",
+    "pactId": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "event": "FUNDS_LOCKED",
+    "message": "5 USDC locked in escrow",
+    "forRole": "both",
+    "createdAt": "2026-04-18T22:27:12.754Z",
+    "read": true
+  },
+  {
+    "id": "78dd2b93-9754-46a5-bc7d-ffd26c9f598f",
+    "pactId": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "event": "PAYMENT_REQUESTED",
+    "message": "Receiver requested payment — your approval needed",
+    "forRole": "sender",
+    "createdAt": "2026-04-18T22:27:38.547Z",
+    "read": true
+  },
+  {
+    "id": "f6889664-3b06-4eca-a505-acf825bd4cd5",
+    "pactId": "0b246fef-48ad-4043-9d8a-c5e5cd65c8cb",
+    "event": "PAYMENT_APPROVED",
+    "message": "5 USDC released to receiver",
+    "forRole": "both",
+    "createdAt": "2026-04-18T22:28:01.416Z",
+    "read": true
+  }
+]
