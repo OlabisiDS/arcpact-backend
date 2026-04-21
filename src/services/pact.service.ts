@@ -1,5 +1,6 @@
-import { v4 as uuidv4 } from 'uuid';
 import logger from '../utils/logger';
+import { v4 as uuidv4 } from 'uuid';
+import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
 import {
   Pact, PactStatus,
   createPact as storePact, getPact as fetchPact,
@@ -22,6 +23,36 @@ const canTransition = (from: PactStatus, to: PactStatus): boolean =>
 
 const isCaller = (stored: string, caller: string): boolean =>
   stored.toLowerCase() === caller.toLowerCase();
+
+// ─── Circle SDK transfer from escrow wallet ───────────────────────────────────
+const circleTransferFromEscrow = async (
+  destinationAddress: string,
+  amount: string
+): Promise<void> => {
+  const apiKey     = process.env.CIRCLE_API_KEY!;
+  const entitySecret = process.env.CIRCLE_ENTITY_SECRET!;
+  const walletId   = process.env.ESCROW_WALLET_ID!;
+  const tokenId    = process.env.USDC_TOKEN_ID!;
+
+  // SDK handles entitySecretCiphertext encryption automatically
+  const client = initiateDeveloperControlledWalletsClient({ apiKey, entitySecret });
+
+  const response = await client.createTransaction({
+    walletId,
+    tokenId,
+    destinationAddress,
+    amounts: [parseFloat(amount).toFixed(6)],
+    fee: { type: 'level', config: { feeLevel: 'MEDIUM' } },
+    idempotencyKey: uuidv4(),
+  });
+
+  const state = response.data?.transaction?.state;
+  logger.info(`[Circle] Transfer to ${destinationAddress} of ${amount} USDC — state: ${state} — id: ${response.data?.transaction?.id}`);
+
+  if (state === 'FAILED') {
+    throw new Error(`Circle transfer failed: ${response.data?.transaction?.errorReason ?? 'unknown reason'}`);
+  }
+};
 
 export const createPact = (
   callerAddress:   string,
@@ -72,47 +103,6 @@ export const requestRelease = (pactId: string, callerAddress: string): PactResul
   const updated = updatePactFields(pactId, { receiverReleaseRequest: true });
   pushNotification(pactId, 'PAYMENT_REQUESTED', 'Receiver requested payment — your approval needed', 'sender');
   return { success: true, pact: updated! };
-};
-
-// ─── Circle API transfer from escrow ─────────────────────────────────────────
-const circleTransferFromEscrow = async (
-  destinationAddress: string,
-  amount: string
-): Promise<void> => {
-  const apiKey      = process.env.CIRCLE_API_KEY!;
-  const walletId    = process.env.ESCROW_WALLET_ID!;
-  const tokenId     = process.env.USDC_TOKEN_ID!;
-  const entitySecret = process.env.CIRCLE_ENTITY_SECRET!;
-
-  // Circle requires an idempotency key — unique per transfer attempt
-  const idempotencyKey = uuidv4();
-
-  const body = {
-    idempotencyKey,
-    source: { type: 'wallet', id: walletId },
-    destination: { type: 'blockchain', address: destinationAddress, chain: 'ARC' },
-    amount: { amount: parseFloat(amount).toFixed(6), currency: 'USD' },
-    tokenId,
-    entitySecretCiphertext: entitySecret,
-  };
-
-  const response = await fetch('https://api.circle.com/v1/w3s/developer/transactions/transfer', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await response.json() as any;
-
-  if (!response.ok || data?.data?.state === 'FAILED') {
-    const msg = data?.message ?? data?.data?.errorReason ?? 'Circle transfer failed';
-    throw new Error(`Circle API error: ${msg}`);
-  }
-
-  logger.info(`[Circle] Transfer to ${destinationAddress} of ${amount} USDC initiated — id: ${data?.data?.id}`);
 };
 
 export const approveRelease = async (pactId: string, callerAddress: string): Promise<PactResult> => {
@@ -201,9 +191,6 @@ export const refundFunds = async (pactId: string): Promise<PactResult> => {
     return { success: false, message: `Cannot refund — ${pact.status}` };
   return { success: true, pact: updatePactStatus(pactId, 'REFUNDED')! };
 };
-
-// ─── cancelPact ───────────────────────────────────────────────────────────────
-// Sender can cancel before receiver accepts — no funds have moved yet.
 
 export const cancelPact = (pactId: string, callerAddress: string): PactResult => {
   const pact = fetchPact(pactId);
