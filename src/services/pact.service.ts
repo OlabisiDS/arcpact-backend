@@ -73,6 +73,47 @@ export const requestRelease = (pactId: string, callerAddress: string): PactResul
   return { success: true, pact: updated! };
 };
 
+// ─── Circle API transfer from escrow ─────────────────────────────────────────
+const circleTransferFromEscrow = async (
+  destinationAddress: string,
+  amount: string
+): Promise<void> => {
+  const apiKey      = process.env.CIRCLE_API_KEY!;
+  const walletId    = process.env.ESCROW_WALLET_ID!;
+  const tokenId     = process.env.USDC_TOKEN_ID!;
+  const entitySecret = process.env.CIRCLE_ENTITY_SECRET!;
+
+  // Circle requires an idempotency key — unique per transfer attempt
+  const idempotencyKey = uuidv4();
+
+  const body = {
+    idempotencyKey,
+    source: { type: 'wallet', id: walletId },
+    destination: { type: 'blockchain', address: destinationAddress, chain: 'ARC' },
+    amount: { amount: parseFloat(amount).toFixed(6), currency: 'USD' },
+    tokenId,
+    entitySecretCiphertext: entitySecret,
+  };
+
+  const response = await fetch('https://api.circle.com/v1/w3s/developer/transactions/transfer', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json() as any;
+
+  if (!response.ok || data?.data?.state === 'FAILED') {
+    const msg = data?.message ?? data?.data?.errorReason ?? 'Circle transfer failed';
+    throw new Error(`Circle API error: ${msg}`);
+  }
+
+  logger.info(`[Circle] Transfer to ${destinationAddress} of ${amount} USDC initiated — id: ${data?.data?.id}`);
+};
+
 export const approveRelease = async (pactId: string, callerAddress: string): Promise<PactResult> => {
   const pact = fetchPact(pactId);
   if (!pact) return { success: false, message: `Pact not found: ${pactId}` };
@@ -82,6 +123,14 @@ export const approveRelease = async (pactId: string, callerAddress: string): Pro
     return { success: false, message: 'Receiver has not requested payment yet' };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: 'Pact must have locked funds' };
+
+  try {
+    await circleTransferFromEscrow(pact.receiverAddress, pact.amount);
+  } catch (err: any) {
+    logger.error(`[PactService] Circle release failed for pact ${pactId}: ${err.message}`);
+    return { success: false, message: err.message };
+  }
+
   const updated = updatePactFields(pactId, { senderApproval: true, status: 'COMPLETED' })!;
   pushNotification(pactId, 'PAYMENT_APPROVED', `${pact.amount} USDC released to receiver`, 'both');
   return { success: true, pact: updated };
@@ -108,6 +157,14 @@ export const approveRefund = async (pactId: string, callerAddress: string): Prom
     return { success: false, message: 'Sender has not requested a refund yet' };
   if (!['FUNDS_LOCKED', 'DISPUTED'].includes(pact.status))
     return { success: false, message: 'Pact must have locked funds' };
+
+  try {
+    await circleTransferFromEscrow(pact.senderAddress, pact.amount);
+  } catch (err: any) {
+    logger.error(`[PactService] Circle refund failed for pact ${pactId}: ${err.message}`);
+    return { success: false, message: err.message };
+  }
+
   const updated = updatePactFields(pactId, { receiverApproval: true, status: 'REFUNDED' })!;
   pushNotification(pactId, 'REFUND_APPROVED', `${pact.amount} USDC refunded to sender`, 'both');
   return { success: true, pact: updated };
