@@ -1,6 +1,5 @@
 import logger from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
-import { initiateDeveloperControlledWalletsClient } from '@circle-fin/developer-controlled-wallets';
 import {
   Pact, PactStatus,
   createPact as storePact, getPact as fetchPact,
