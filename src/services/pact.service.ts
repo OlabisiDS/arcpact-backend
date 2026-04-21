@@ -152,9 +152,12 @@ export const cancelPact = (pactId: string, callerAddress: string): PactResult =>
   if (!pact) return { success: false, message: `Pact not found: ${pactId}` };
   if (!isCaller(pact.senderAddress, callerAddress))
     return { success: false, message: 'Forbidden: only the sender can cancel this pact' };
-  if (pact.status !== 'CREATED')
-    return { success: false, message: 'Can only cancel a pact that has not been accepted yet' };
+  if (pact.status !== 'CREATED' && pact.status !== 'ACCEPTED')
+    return { success: false, message: 'Can only cancel a pact that has not been funded yet' };
   const updated = updatePactStatus(pactId, 'REFUNDED')!;
-  pushNotification(pactId, 'REFUND_APPROVED', 'Pact cancelled by sender before acceptance', 'both');
+  const msg = pact.status === 'ACCEPTED'
+    ? 'Pact cancelled by sender after acceptance — no funds were moved'
+    : 'Pact cancelled by sender before acceptance';
+  pushNotification(pactId, 'REFUND_APPROVED', msg, 'both');
   return { success: true, pact: updated };
 };
